@@ -2,11 +2,13 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Octokit } from "@octokit/rest";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const octokit = new Octokit();
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 async function startServer() {
   const app = express();
@@ -14,32 +16,75 @@ async function startServer() {
 
   app.use(express.json());
 
+  // README Generation
+  app.post("/api/generate", async (req, res) => {
+    const { name, template, language, description, techStack, license, badges, roadmap, supplemental } = req.body;
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: "Gemini API key not configured" });
+    }
+
+    const prompt = `
+      You are an elite software architect and documentation expert.
+      Generate a professional README.md for a project called "${name}".
+      
+      Project Parameters:
+      - Description: ${description}
+      - Template Style: ${template}
+      - Target Language: ${language}
+      - Tech Stack: ${techStack}
+      - License: ${license}
+      - Badges requested: ${badges.join(", ")}
+      - Roadmap items: ${roadmap.join(", ")}
+      - Supplemental documents to reference: ${supplemental.join(", ")}
+
+      CRITICAL: You must output a SINGLE STRING that contains the main README and the supplemental documents separated by the delimiter "---FILE_SEPARATOR---".
+      Each supplemental document MUST follow this format:
+      ---FILE_SEPARATOR---
+      [FILENAME.md]
+      # Document Title
+      Content...
+
+      Design Instructions:
+      - Use high-quality, professional markdown.
+      - Include a hero section if the template is "Hero Visual".
+      - Use modern accessibility standards.
+      - Do NOT include any intro/outro text, just the markdown content.
+    `;
+
+    try {
+      const response = await genAI.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt
+      });
+      res.json({ content: response.text });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // GitHub Repository Analysis
   app.post("/api/analyze-repo", async (req, res) => {
     const { url } = req.body;
     try {
-      // Parse owner and repo from URL
       const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) return res.status(400).json({ error: "Invalid GitHub URL" });
       
       const [, owner, repo] = match;
+      const cleanRepo = repo.replace(".git", "");
       
-      // Fetch basic repo info
-      const { data: repoInfo } = await octokit.repos.get({ owner, repo: repo.replace(".git", "") });
-      
-      // Fetch file list (recursive)
-      const { data: tree } = await octokit.repos.getBranch({ owner, repo: repo.replace(".git", ""), branch: repoInfo.default_branch });
+      const { data: repoInfo } = await octokit.repos.get({ owner, repo: cleanRepo });
+      const { data: branchInfo } = await octokit.repos.getBranch({ owner, repo: cleanRepo, branch: repoInfo.default_branch });
       const { data: fullTree } = await octokit.git.getTree({ 
         owner, 
-        repo: repo.replace(".git", ""), 
-        tree_sha: tree.commit.commit.tree.sha, 
+        repo: cleanRepo, 
+        tree_sha: branchInfo.commit.commit.tree.sha, 
         recursive: "true" 
       });
 
-      // Fetch package.json for tech stack analysis
       let packageJson = null;
       try {
-        const { data: file } = await octokit.repos.getContent({ owner, repo: repo.replace(".git", ""), path: "package.json" });
+        const { data: file } = await octokit.repos.getContent({ owner, repo: cleanRepo, path: "package.json" });
         if ('content' in file) {
           packageJson = JSON.parse(Buffer.from(file.content, 'base64').toString());
         }
@@ -47,9 +92,9 @@ async function startServer() {
 
       res.json({
         name: repoInfo.name,
-        description: repoInfo.description,
+        description: repoInfo.description || "",
         techStack: packageJson ? Object.keys({ ...packageJson.dependencies, ...packageJson.devDependencies }).join(", ") : "",
-        files: fullTree.tree.map(f => f.path).slice(0, 50) // Limit for prompt context
+        files: fullTree.tree.map(f => f.path).slice(0, 50)
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -60,7 +105,6 @@ async function startServer() {
     res.json({ status: "ok", message: "Readme.AI Backend Active" });
   });
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

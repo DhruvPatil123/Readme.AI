@@ -10,7 +10,7 @@ import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User 
 import { collection, addDoc, serverTimestamp, getDoc, doc, query, where, orderBy, getDocs, onSnapshot, deleteDoc } from "firebase/firestore";
 import ReactMarkdown from "react-markdown";
 
-type Stage = "landing" | "generator";
+type Stage = "landing" | "generator" | "view";
 
 interface HistoryItem {
   id: string;
@@ -27,6 +27,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
   const [viewContent, setViewContent] = useState<any>(null);
+  const [isLoadingView, setIsLoadingView] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -36,6 +37,7 @@ export default function App() {
       const id = path.split("/view/")[1];
       if (id) {
         setViewId(id);
+        setStage("view");
         fetchHostedDoc(id);
       }
     }
@@ -71,11 +73,21 @@ export default function App() {
   }, [user]);
 
   const fetchHostedDoc = async (id: string) => {
+    setIsLoadingView(true);
     try {
       const d = await getDoc(doc(db, "documents", id));
-      if (d.exists()) setViewContent(d.data());
+      if (d.exists()) {
+        setViewContent(d.data());
+      } else {
+        setStage("landing");
+        setViewId(null);
+      }
     } catch (err) {
       console.error(err);
+      setStage("landing");
+      setViewId(null);
+    } finally {
+      setIsLoadingView(false);
     }
   };
 
@@ -148,6 +160,7 @@ export default function App() {
     setMarkdown(item.content);
     setProjectName(item.projectName);
     setShowHistory(false);
+    setStage("generator");
   };
 
   const handleDeleteHistory = async (e: React.MouseEvent, id: string) => {
@@ -159,7 +172,34 @@ export default function App() {
     }
   };
 
-  if (viewId && viewContent) {
+  if (stage === "view") {
+    if (isLoadingView) {
+      return (
+        <div className="min-h-screen bg-surface-bg flex items-center justify-center">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-sky-500/20 border-t-sky-500 rounded-full"
+          />
+        </div>
+      );
+    }
+
+    if (!viewContent) {
+      return (
+        <div className="min-h-screen bg-surface-bg flex flex-col items-center justify-center text-center p-6">
+          <Shield className="w-16 h-16 text-red-500 mb-6 opacity-50" />
+          <h2 className="text-3xl font-black text-white mb-4 uppercase">Document Expired</h2>
+          <p className="text-slate-400 max-w-xs mb-8">The requested protocol is no longer available on this carrier node.</p>
+          <button 
+            onClick={() => { setStage("landing"); setViewId(null); window.history.pushState({}, "", "/"); }}
+            className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-full border border-white/10 backdrop-blur-xl font-bold transition-all"
+          >
+            Return to Base
+          </button>
+        </div>
+      );
+    }
     const filesParts = viewContent.content.split("---FILE_SEPARATOR---").filter(Boolean);
     const mainMarkdown = filesParts[0] || "";
     const extraDocs = filesParts.slice(1).map((doc: string) => {
@@ -176,7 +216,12 @@ export default function App() {
           <motion.button 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => window.history.pushState({}, "", "/")}
+            onClick={() => {
+              setStage("landing");
+              setViewId(null);
+              setViewContent(null);
+              window.history.pushState({}, "", "/");
+            }}
             className="flex items-center gap-3 text-slate-500 hover:text-white transition-all mb-16 group bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-xl"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

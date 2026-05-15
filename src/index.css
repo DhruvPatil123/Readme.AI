@@ -90,10 +90,12 @@
 }
 
 .markdown-body h1 { 
-  @apply text-white font-display font-bold text-4xl mb-10 border-b border-white/10 pb-6 tracking-tight bg-clip-text;
-  mask-image: linear-gradient(-75deg, rgba(0,0,0,0.6) 30%, #000 50%, rgba(0,0,0,0.6) 70%);
-  mask-size: 200%;
-  animation: shine 3s linear infinite;
+  @apply text-white font-display font-bold text-4xl mb-10 border-b border-white/10 pb-6 tracking-tight relative;
+}
+.markdown-body h1::after {
+  content: "";
+  @apply absolute bottom-0 left-0 h-[2px] bg-sky-500 w-24;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
 }
 .markdown-body h2 { @apply text-white font-display font-bold text-2xl mt-12 mb-6 tracking-tight; }
 .markdown-body h3 { @apply text-white font-display font-semibold text-xl mt-8 mb-4; }
