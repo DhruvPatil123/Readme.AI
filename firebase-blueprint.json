@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Document": {
+      "title": "Document",
+      "description": "A hosted README document",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "content": { "type": "string" },
+        "slug": { "type": "string" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "projectName", "content", "slug", "isPublic", "createdAt", "updatedAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "lastSeen": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Generation": {
+      "title": "Generation",
+      "description": "Raw README generation history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "projectName", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/documents/{docId}": {
+      "schema": "Document",
+      "description": "Hosted README documents accessible by slug or ID"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/generations/{genId}": {
+      "schema": "Generation",
+      "description": "Past documentation generation history for users"
+    }
+  }
+}

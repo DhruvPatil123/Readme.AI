@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidDocument(doc) {
+      return doc.userId == request.auth.uid &&
+             doc.projectName is string && doc.projectName.size() < 100 &&
+             doc.content is string && doc.content.size() < 100000 &&
+             doc.slug is string && doc.slug.size() < 100;
+    }
+
+    match /documents/{docId} {
+      allow read: if resource.data.isPublic == true || isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidDocument(request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(resource.data.userId) && isValidDocument(request.resource.data) && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(resource.data.userId);
+      
+      // Allow list for user's own docs
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    match /generations/{genId} {
+      allow read, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.timestamp == request.time;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

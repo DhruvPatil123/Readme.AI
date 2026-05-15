@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-surface-bg: #02040a;
+  --color-surface-card: rgba(10, 12, 18, 0.4);
+  --color-accent: #0ea5e9;
+  --color-accent-glow: rgba(14, 165, 233, 0.3);
+}
+
+@layer base {
+  body {
+    @apply bg-surface-bg text-slate-200 antialiased overflow-x-hidden selection:bg-sky-500/30;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+
+  /* Custom Glow Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full border-2 border-transparent bg-clip-content hover:bg-sky-500/50 transition-colors;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl;
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 30px var(--color-accent-glow);
+  }
+
+  .bg-grid {
+    background-image: 
+      radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+    background-size: 32px 32px;
+  }
+
+  .animated-gradient {
+    background: linear-gradient(
+      -45deg, 
+      #02040a, 
+      #050b1a, 
+      #0a1931, 
+      #02040a
+    );
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .floating {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+  }
+
+  .shine {
+    mask-image: linear-gradient(-75deg, rgba(0,0,0,0.6) 30%, #000 50%, rgba(0,0,0,0.6) 70%);
+    mask-size: 200%;
+    animation: shine 3s linear infinite;
+  }
+
+  @keyframes shine {
+    from { mask-position: 150%; }
+    to { mask-position: -50%; }
+  }
+}
+
+/* Markdown styling overrides for Dark UI */
+.markdown-body {
+  @apply text-slate-300 leading-relaxed font-sans;
+}
+
+.markdown-body h1 { 
+  @apply text-white font-display font-bold text-4xl mb-10 border-b border-white/10 pb-6 tracking-tight bg-clip-text;
+  mask-image: linear-gradient(-75deg, rgba(0,0,0,0.6) 30%, #000 50%, rgba(0,0,0,0.6) 70%);
+  mask-size: 200%;
+  animation: shine 3s linear infinite;
+}
+.markdown-body h2 { @apply text-white font-display font-bold text-2xl mt-12 mb-6 tracking-tight; }
+.markdown-body h3 { @apply text-white font-display font-semibold text-xl mt-8 mb-4; }
+.markdown-body p { @apply mb-6 text-lg; }
+.markdown-body code { @apply bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-sky-400 font-mono text-[0.85em]; }
+.markdown-body pre { @apply bg-black/40 border border-white/10 rounded-2xl p-8 mb-10 overflow-x-auto shadow-2xl backdrop-blur-sm; }
+.markdown-body pre code { @apply bg-transparent border-none p-0 text-slate-300 text-sm; }
+.markdown-body ul { @apply list-disc pl-6 mb-8 space-y-3; }
+.markdown-body ol { @apply list-decimal pl-6 mb-8 space-y-3; }
+.markdown-body blockquote { @apply border-l-4 border-sky-500 bg-sky-500/5 px-8 py-6 rounded-r-2xl italic mb-10 text-xl text-slate-300; }
+.markdown-body table { @apply w-full border-collapse mb-10 rounded-2xl overflow-hidden border border-white/10; }
+.markdown-body th { @apply bg-white/5 px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400 border-b border-white/10; }
+.markdown-body td { @apply px-6 py-4 border-b border-white/5 text-sm; }
+.markdown-body img { @apply rounded-[2rem] border border-white/10 shadow-2xl my-12 mx-auto transition-transform hover:scale-[1.02] duration-500; }
+.markdown-body a { @apply text-sky-400 font-semibold no-underline hover:underline decoration-sky-500/50 underline-offset-4 transition-all; }
