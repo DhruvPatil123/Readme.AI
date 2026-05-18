@@ -2,6 +2,7 @@ import { Github, Star, Sparkles, BookOpen, User, LogOut, LayoutDashboard, Share2
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
+import { Analytics } from "@vercel/analytics/react";
 import Form from "./components/Form";
 import Preview from "./components/Preview";
 import { generateReadme } from "./lib/gemini";
@@ -541,7 +542,7 @@ export default function App() {
           </div>
         </div>
       </footer>
+      <Analytics />
     </div>
   );
 }
-
